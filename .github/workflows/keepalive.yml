@@ -1,0 +1,18 @@
+name: Mantener activo Supabase (Pulse Capacitaciones)
+
+on:
+  schedule:
+    # Se ejecuta todos los domingos y miércoles a las 09:00 UTC (~06:00 hora Chile continental)
+    - cron: '0 9 * * 0,3'
+  workflow_dispatch: {}
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hacer una consulta mínima a la base de datos
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://hcsopyqzebjuedegmthz.supabase.co/rest/v1/sesion?select=id&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjc29weXF6ZWJqdWVkZWdtdGh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MzA0ODcsImV4cCI6MjEwMTIwNjQ4N30.ODA1GlirLy9eUCqFUIDyaQUlqLYr7op_XwXGgmmneUg" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjc29weXF6ZWJqdWVkZWdtdGh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MzA0ODcsImV4cCI6MjEwMTIwNjQ4N30.ODA1GlirLy9eUCqFUIDyaQUlqLYr7op_XwXGgmmneUg"
