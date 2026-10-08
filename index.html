@@ -316,6 +316,17 @@ async function renderPasarLista(){
         <input id="pl-fecha" type="date" value="${hoyISO()}" max="${hoyISO()}" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; background:var(--surface-soft); color:var(--ink);">
         <p id="pl-fecha-txt" style="margin:10px 0 0; font-size:14px; font-weight:700;"></p>
       </div>
+      <div class="card" style="margin-bottom:14px;">
+        <p class="side-title">Corregir la fecha de esta clase</p>
+        <p id="pl-corr-info" style="margin:0 0 10px; font-size:14px; color:var(--ink-soft);">Cargando…</p>
+        <div id="pl-corr-form" style="display:none;">
+          <label for="pl-corr-desde" style="display:block; margin:0 0 6px; font-size:13px; color:var(--ink-soft); font-weight:600;">Fecha con la que quedó registrada</label>
+          <select id="pl-corr-desde" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; margin-bottom:12px; background:var(--surface-soft); color:var(--ink);"></select>
+          <label for="pl-corr-hasta" style="display:block; margin:0 0 6px; font-size:13px; color:var(--ink-soft); font-weight:600;">Fecha correcta de la clase</label>
+          <input id="pl-corr-hasta" type="date" max="${hoyISO()}" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; margin-bottom:12px; background:var(--surface-soft); color:var(--ink);">
+          <button class="btn teal" id="pl-corr-guardar" style="width:100%; padding:14px;">Guardar fecha</button>
+        </div>
+      </div>
       <input id="pl-buscar" type="search" placeholder="Buscar alumno" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; margin-bottom:12px; background:var(--surface-soft); color:var(--ink);">
       <div id="pl-lista" style="display:flex; flex-direction:column; gap:8px; margin-bottom:28px;"><p class="empty-note">Cargando…</p></div>
       <div class="card">
@@ -366,7 +377,7 @@ async function renderPasarLista(){
           const r = await marcarAsistencia(alumno.id, claseSel, sesion.edicion, 'manual', fechaSel);
           if(r.ok) presentes.set(alumno.id, { origen:'manual', ts:Date.now() }); else if(r.motivo === 'sin_calendario') avisoCalendario(); else alert('No se pudo marcar. Revisa tu conexión.');
         }
-        pintar();
+        pintar(); if(typeof cargarFechas === 'function') cargarFechas();
       };
     });
     lista.querySelectorAll('button[data-del]').forEach(btn => {
@@ -382,10 +393,55 @@ async function renderPasarLista(){
     });
   };
   buscar.addEventListener('input', pintar);
+  let fechasClase = [];
+  const cargarFechas = async () => {
+    const info = document.getElementById('pl-corr-info'), form = document.getElementById('pl-corr-form');
+    if(!info || !form) return;
+    try{
+      let q = sb.from('asistencia').select('fecha').eq('clase_id', claseSel);
+      if(sesion.edicion) q = q.eq('edicion', sesion.edicion);
+      const { data, error } = await q;
+      if(error) throw error;
+      const cuenta = {};
+      (data || []).forEach(r => { cuenta[r.fecha] = (cuenta[r.fecha] || 0) + 1; });
+      fechasClase = Object.keys(cuenta).sort().map(f => ({ fecha:f, n:cuenta[f] }));
+    }catch(e){ console.error('cargarFechas', e); fechasClase = []; info.textContent = 'No se pudieron leer las fechas. Revisa tu conexión.'; form.style.display = 'none'; return; }
+    if(!fechasClase.length){ info.textContent = 'La Clase ' + claseSel + ' aún no tiene asistencia registrada.'; form.style.display = 'none'; return; }
+    info.textContent = 'La Clase ' + claseSel + ' figura con ' + (fechasClase.length === 1 ? 'esta fecha' : 'estas fechas') + ': ' + fechasClase.map(x => fechaLarga(x.fecha) + ' (' + x.n + ')').join(' · ');
+    const desde = document.getElementById('pl-corr-desde'), prev = desde.value;
+    desde.innerHTML = fechasClase.map(x => `<option value="${x.fecha}">${escHtmlPulse(fechaLarga(x.fecha))} · ${x.n} ${x.n === 1 ? 'registro' : 'registros'}</option>`).join('');
+    desde.value = fechasClase.some(x => x.fecha === prev) ? prev : fechasClase[fechasClase.length - 1].fecha;
+    const hasta = document.getElementById('pl-corr-hasta'); if(!hasta.value) hasta.value = desde.value;
+    form.style.display = 'block';
+  };
   const recargar = async () => {
     lista.style.opacity = '.5';
     presentes = await getAsistenciaDetalleHoy(claseSel, sesion.edicion, fechaSel);
-    lista.style.opacity = '1'; txtFecha(); pintar();
+    lista.style.opacity = '1'; txtFecha(); pintar(); await cargarFechas();
+  };
+  document.getElementById('pl-corr-desde').onchange = (e) => { document.getElementById('pl-corr-hasta').value = e.target.value; };
+  document.getElementById('pl-corr-guardar').onclick = async () => {
+    const desde = document.getElementById('pl-corr-desde').value, hasta = document.getElementById('pl-corr-hasta').value;
+    const info = document.getElementById('pl-corr-info'), btn = document.getElementById('pl-corr-guardar');
+    if(!desde || !hasta) return;
+    if(hasta > hoyISO()){ alert('No se puede registrar una fecha futura.'); return; }
+    if(hasta === desde){ alert('Elige una fecha distinta a la que ya tiene registrada.'); return; }
+    const n = (fechasClase.find(x => x.fecha === desde) || {}).n || 0;
+    if(!confirm('¿Cambiar la Clase ' + claseSel + ' del ' + fechaLarga(desde) + ' al ' + fechaLarga(hasta) + '? Se corrigen ' + n + ' registros de asistencia.')) return;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    let res;
+    try{ res = await sb.rpc('corregir_fecha_clase', { p_clase: claseSel, p_edicion: sesion.edicion, p_desde: desde, p_hasta: hasta, p_clave: INTERPRETER_PASSWORD }); }catch(e){ res = { error: e }; }
+    btn.disabled = false; btn.textContent = 'Guardar fecha';
+    if(res.error){
+      const m = ((res.error.message || '') + ' ' + (res.error.code || ''));
+      if(/PGRST202|corregir_fecha_clase|schema cache/i.test(m)) alert('Falta activar la corrección de fechas en Supabase (ejecutar corregir_fechas.sql).');
+      else if(/fecha_futura/i.test(m)) alert('No se puede registrar una fecha futura.');
+      else alert('No se pudo guardar la fecha. Revisa tu conexión e intenta de nuevo.');
+      return;
+    }
+    fechaSel = hasta; document.getElementById('pl-fecha').value = hasta; document.getElementById('pl-corr-hasta').value = '';
+    await recargar();
+    info.textContent = '✅ Guardado: la Clase ' + claseSel + ' quedó con fecha ' + fechaLarga(hasta) + '.';
   };
   document.getElementById('pl-clase').onchange = (e) => { claseSel = parseInt(e.target.value, 10) || sesion.classId; recargar(); };
   document.getElementById('pl-fecha').onchange = (e) => {
@@ -395,6 +451,7 @@ async function renderPasarLista(){
   };
   const avisoCalendario = () => alert('Para registrar una clase de otra fecha falta activar el calendario en Supabase (ejecutar fechas_clases.sql).');
   pintar();
+  cargarFechas();
   document.getElementById('pl-agregar').onclick = async () => {
     const nombre = document.getElementById('pl-nombre').value.trim();
     const wa = document.getElementById('pl-wa').value.trim();
