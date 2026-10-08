@@ -28,8 +28,16 @@
 <div id="app"></div>
 <script src="/pulse-data.js"></script>
 <script>document.getElementById('splash-img').src='data:image/webp;base64,'+PULSE_SPLASH_LOGO_B64;
-const DIANA_FOTO='data:image/jpeg;base64,'+PULSE_DIANA_B64;const DIANA_NOMBRE = "Diana Verdugo";const BLOQUES = { intro: {label:'Introducción', color:'var(--bloque-intro)'}, tramites: {label:'Trámites', color:'var(--bloque-tramites)'}, legal: {label:'Leyes', color:'var(--bloque-legal)'}, mecanica: {label:'Mecánica', color:'var(--bloque-mecanica)'}, senaletica: {label:'Señales y física', color:'var(--bloque-senaletica)'}, humano: {label:'Factor humano', color:'var(--bloque-humano)'}, cierre: {label:'Cierre', color:'var(--bloque-cierre)'},};const CLASES = PULSE_CLASES_DATA;const SUPABASE_URL = 'https://hcsopyqzebjuedegmthz.supabase.co';const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjc29weXF6ZWJqdWVkZWdtdGh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MzA0ODcsImV4cCI6MjEwMTIwNjQ4N30.ODA1GlirLy9eUCqFUIDyaQUlqLYr7op_XwXGgmmneUg';const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: 'taller_licencia' }});const INTERPRETER_PASSWORD = 'pulse2026';window.addEventListener('error', (e) => { console.error('Error global:', e.error || e.message); const ya = document.getElementById('pulse-error-banner'); if(ya) return; const div = document.createElement('div'); div.id = 'pulse-error-banner'; div.style.cssText = 'position:fixed; bottom:0; left:0; right:0; background:#DC2626; color:#fff; padding:12px 16px; font-size:12px; font-family:monospace; z-index:99999; white-space:pre-wrap;'; div.textContent = '⚠️ Error: ' + (e.message || 'desconocido') + ' (' + (e.filename||'') + ':' + (e.lineno||'') + ')'; document.body.appendChild(div); });function hoyISO(){ try{ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }); }catch(e){ const d = new Date(Date.now() - 3*3600*1000); return d.toISOString().slice(0,10); } }async function getSession(){ try{ const { data, error } = await sb.from('sesion').select('*').eq('id', 1).single(); if(error || !data) return {...DEFAULT_SESSION}; return { classId: data.class_id, view: data.view, slideIndex: data.slide_index, quiz: data.quiz, match: data.match, revealed: data.revealed, updatedAt: new Date(data.updated_at).getTime(), resetToken: data.reset_token, interpreteActivo: data.interprete_activo, winner: data.winner, edicion: data.edicion || 'Edición 1' }; }catch(e){ console.error('getSession', e); return {...DEFAULT_SESSION}; }}async function updateSession(patch){ const row = {}; if('classId' in patch) row.class_id = patch.classId; if('view' in patch) row.view = patch.view; if('slideIndex' in patch) row.slide_index = patch.slideIndex; if('quiz' in patch) row.quiz = patch.quiz; if('match' in patch) row.match = patch.match; if('revealed' in patch) row.revealed = patch.revealed; if('resetToken' in patch) row.reset_token = patch.resetToken; if('winner' in patch) row.winner = patch.winner; if('edicion' in patch) row.edicion = patch.edicion; row.updated_at = new Date().toISOString(); try{ await sb.from('sesion').update(row).eq('id', 1); }catch(e){ console.error('updateSession', e); }}async function upsertAlumno(name, whatsapp, rut){ const { data: existente } = await sb.from('alumnos').select('id').eq('whatsapp', whatsapp).maybeSingle(); if(existente){ await sb.from('alumnos').update({ name, rut }).eq('id', existente.id); return existente.id; } const { data, error } = await sb.from('alumnos').insert({ name, whatsapp, rut }).select('id').single(); if(error){ console.error('upsertAlumno', error); return null; } return data.id;}async function marcarAsistencia(alumnoId, claseId, edicion, origen){
-  const fila = { alumno_id: alumnoId, clase_id: claseId, fecha: hoyISO(), edicion: edicion || 'Edición 1', origen: origen || 'alumno' };
+const DIANA_FOTO='data:image/jpeg;base64,'+PULSE_DIANA_B64;const DIANA_NOMBRE = "Diana Verdugo";const BLOQUES = { intro: {label:'Introducción', color:'var(--bloque-intro)'}, tramites: {label:'Trámites', color:'var(--bloque-tramites)'}, legal: {label:'Leyes', color:'var(--bloque-legal)'}, mecanica: {label:'Mecánica', color:'var(--bloque-mecanica)'}, senaletica: {label:'Señales y física', color:'var(--bloque-senaletica)'}, humano: {label:'Factor humano', color:'var(--bloque-humano)'}, cierre: {label:'Cierre', color:'var(--bloque-cierre)'},};const CLASES = PULSE_CLASES_DATA;const SUPABASE_URL = 'https://hcsopyqzebjuedegmthz.supabase.co';const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjc29weXF6ZWJqdWVkZWdtdGh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MzA0ODcsImV4cCI6MjEwMTIwNjQ4N30.ODA1GlirLy9eUCqFUIDyaQUlqLYr7op_XwXGgmmneUg';const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: 'taller_licencia' }});const INTERPRETER_PASSWORD = 'pulse2026';window.addEventListener('error', (e) => { console.error('Error global:', e.error || e.message); const ya = document.getElementById('pulse-error-banner'); if(ya) return; const div = document.createElement('div'); div.id = 'pulse-error-banner'; div.style.cssText = 'position:fixed; bottom:0; left:0; right:0; background:#DC2626; color:#fff; padding:12px 16px; font-size:12px; font-family:monospace; z-index:99999; white-space:pre-wrap;'; div.textContent = '⚠️ Error: ' + (e.message || 'desconocido') + ' (' + (e.filename||'') + ':' + (e.lineno||'') + ')'; document.body.appendChild(div); });function hoyISO(){ try{ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }); }catch(e){ const d = new Date(Date.now() - 3*3600*1000); return d.toISOString().slice(0,10); } }async function getSession(){ try{ const { data, error } = await sb.from('sesion').select('*').eq('id', 1).single(); if(error || !data) return {...DEFAULT_SESSION}; return { classId: data.class_id, view: data.view, slideIndex: data.slide_index, quiz: data.quiz, match: data.match, revealed: data.revealed, updatedAt: new Date(data.updated_at).getTime(), resetToken: data.reset_token, interpreteActivo: data.interprete_activo, winner: data.winner, edicion: data.edicion || 'Edición 1' }; }catch(e){ console.error('getSession', e); return {...DEFAULT_SESSION}; }}async function updateSession(patch){ const row = {}; if('classId' in patch) row.class_id = patch.classId; if('view' in patch) row.view = patch.view; if('slideIndex' in patch) row.slide_index = patch.slideIndex; if('quiz' in patch) row.quiz = patch.quiz; if('match' in patch) row.match = patch.match; if('revealed' in patch) row.revealed = patch.revealed; if('resetToken' in patch) row.reset_token = patch.resetToken; if('winner' in patch) row.winner = patch.winner; if('edicion' in patch) row.edicion = patch.edicion; row.updated_at = new Date().toISOString(); try{ await sb.from('sesion').update(row).eq('id', 1); }catch(e){ console.error('updateSession', e); }}async function upsertAlumno(name, whatsapp, rut){ const { data: existente } = await sb.from('alumnos').select('id').eq('whatsapp', whatsapp).maybeSingle(); if(existente){ await sb.from('alumnos').update({ name, rut }).eq('id', existente.id); return existente.id; } const { data, error } = await sb.from('alumnos').insert({ name, whatsapp, rut }).select('id').single(); if(error){ console.error('upsertAlumno', error); return null; } return data.id;}let calendarioListo = null;
+async function calendarioActivo(){
+  if(calendarioListo === true) return true;
+  try{ const { data, error } = await sb.rpc('calendario_activo'); calendarioListo = !error && data === true; }catch(e){ calendarioListo = false; }
+  return calendarioListo;
+}
+function fechaLarga(iso){ try{ const [y,m,d] = iso.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('es-CL', { timeZone:'UTC', weekday:'long', day:'numeric', month:'long', year:'numeric' }); }catch(e){ return iso; } }
+async function marcarAsistencia(alumnoId, claseId, edicion, origen, fecha){
+  if(fecha && fecha !== hoyISO() && !(await calendarioActivo())) return { ok:false, motivo:'sin_calendario' };
+  const fila = { alumno_id: alumnoId, clase_id: claseId, fecha: fecha || hoyISO(), edicion: edicion || 'Edición 1', origen: origen || 'alumno' };
   const opts = { onConflict: 'alumno_id,clase_id,fecha,edicion', ignoreDuplicates: true };
   try{
     let res = await sb.from('asistencia').upsert(fila, opts);
@@ -44,9 +52,9 @@ const DIANA_FOTO='data:image/jpeg;base64,'+PULSE_DIANA_B64;const DIANA_NOMBRE = 
   }catch(e){ console.error('marcarAsistencia', e); return { ok:false, motivo:'error' }; }
 }
 let ultimoMotivoAsistencia = null;
-async function desmarcarAsistenciaDeAlumno(alumnoId, claseId, edicion){
+async function desmarcarAsistenciaDeAlumno(alumnoId, claseId, edicion, fecha){
   try{
-    let q = sb.from('asistencia').delete().eq('alumno_id', alumnoId).eq('clase_id', claseId).eq('fecha', hoyISO());
+    let q = sb.from('asistencia').delete().eq('alumno_id', alumnoId).eq('clase_id', claseId).eq('fecha', fecha || hoyISO());
     if(edicion) q = q.eq('edicion', edicion);
     const { error } = await q;
     return !error;
@@ -60,9 +68,9 @@ async function getTodosLosAlumnos(conContacto){
     return data.sort((a,b) => (a.name || '').localeCompare(b.name || '', 'es'));
   }catch(e){ console.error('getTodosLosAlumnos', e); return []; }
 }
-async function getAsistenciaDetalleHoy(claseId, edicion){
+async function getAsistenciaDetalleHoy(claseId, edicion, fecha){
   const armar = (conOrigen) => {
-    let q = sb.from('asistencia').select(conOrigen ? 'alumno_id, origen, created_at' : 'alumno_id, created_at').eq('clase_id', claseId).eq('fecha', hoyISO());
+    let q = sb.from('asistencia').select(conOrigen ? 'alumno_id, origen, created_at' : 'alumno_id, created_at').eq('clase_id', claseId).eq('fecha', fecha || hoyISO());
     if(edicion) q = q.eq('edicion', edicion);
     return q;
   };
@@ -296,11 +304,18 @@ async function renderPasarLista(){
   const clase = CLASES.find(c => c.id === sesion.classId);
   app.innerHTML = `
     <div class="review-topbar">
-      <div class="brand" style="display:flex; align-items:center; gap:10px; font-weight:800; font-size:16px;">✅ Pasar lista · Clase ${sesion.classId}</div>
+      <div class="brand" style="display:flex; align-items:center; gap:10px; font-weight:800; font-size:16px;">✅ Pasar lista</div>
       <div style="display:flex; align-items:center; gap:10px;"><span class="badge" id="pl-contador">…</span><button class="exit-btn" id="pl-volver">← Volver</button></div>
     </div>
     <div class="wrap" style="max-width:760px;">
-      <p style="color:var(--ink-soft); font-size:14px; margin:20px 0 14px;">${clase ? escHtmlPulse(clase.titulo) + ' · ' : ''}${escHtmlPulse(sesion.edicion)} · hoy. Toca un nombre para marcarlo presente o quitar la marca. Los que se marcaron solos dicen “alumno”; los que marcas tú dicen “manual”.</p>
+      <p style="color:var(--ink-soft); font-size:14px; margin:20px 0 14px;">${escHtmlPulse(sesion.edicion)}. Elige la clase y la fecha en que se hizo. Toca un nombre para marcarlo presente o quitar la marca. Los que se marcaron solos dicen “alumno”; los que marcas tú dicen “manual”.</p>
+      <div class="card" style="margin-bottom:14px;">
+        <label for="pl-clase" style="display:block; margin:0 0 6px; font-size:13px; color:var(--ink-soft); font-weight:600;">Clase</label>
+        <select id="pl-clase" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; margin-bottom:12px; background:var(--surface-soft); color:var(--ink);">${CLASES.map(c => `<option value="${c.id}"${c.id === sesion.classId ? ' selected' : ''}>Clase ${c.id}${c.titulo ? ' · ' + escHtmlPulse(c.titulo) : ''}</option>`).join('')}</select>
+        <label for="pl-fecha" style="display:block; margin:0 0 6px; font-size:13px; color:var(--ink-soft); font-weight:600;">Fecha de la clase</label>
+        <input id="pl-fecha" type="date" value="${hoyISO()}" max="${hoyISO()}" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; background:var(--surface-soft); color:var(--ink);">
+        <p id="pl-fecha-txt" style="margin:10px 0 0; font-size:14px; font-weight:700;"></p>
+      </div>
       <input id="pl-buscar" type="search" placeholder="Buscar alumno" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px 16px; border-radius:10px; border:2px solid var(--line); font-size:16px; font-family:inherit; margin-bottom:12px; background:var(--surface-soft); color:var(--ink);">
       <div id="pl-lista" style="display:flex; flex-direction:column; gap:8px; margin-bottom:28px;"><p class="empty-note">Cargando…</p></div>
       <div class="card">
@@ -313,8 +328,16 @@ async function renderPasarLista(){
     </div>`;
   document.getElementById('pl-volver').onclick = () => { route = 'interpreter'; render(); startInterpreterLoop(); };
   aplicarMascaraRut(document.getElementById('pl-rut'));
+  let claseSel = sesion.classId, fechaSel = hoyISO();
+  const txtFecha = () => {
+    const el = document.getElementById('pl-fecha-txt'); if(!el) return;
+    const pasada = fechaSel !== hoyISO();
+    el.style.color = pasada ? 'var(--red)' : 'var(--green)';
+    el.textContent = (pasada ? '📅 Registrando una clase pasada: ' : '📅 Hoy: ') + fechaLarga(fechaSel);
+  };
   let alumnos = await getTodosLosAlumnos(true);
-  let presentes = await getAsistenciaDetalleHoy(sesion.classId, sesion.edicion);
+  let presentes = await getAsistenciaDetalleHoy(claseSel, sesion.edicion, fechaSel);
+  txtFecha();
   const lista = document.getElementById('pl-lista');
   const buscar = document.getElementById('pl-buscar');
   if(!lista) return;
@@ -337,11 +360,11 @@ async function renderPasarLista(){
         if(!alumno) return;
         btn.disabled = true;
         if(presentes.has(alumno.id)){
-          const ok = await desmarcarAsistenciaDeAlumno(alumno.id, sesion.classId, sesion.edicion);
+          const ok = await desmarcarAsistenciaDeAlumno(alumno.id, claseSel, sesion.edicion, fechaSel);
           if(ok) presentes.delete(alumno.id); else alert('No se pudo quitar la marca. Revisa tu conexión.');
         } else {
-          const r = await marcarAsistencia(alumno.id, sesion.classId, sesion.edicion, 'manual');
-          if(r.ok) presentes.set(alumno.id, { origen:'manual', ts:Date.now() }); else alert('No se pudo marcar. Revisa tu conexión.');
+          const r = await marcarAsistencia(alumno.id, claseSel, sesion.edicion, 'manual', fechaSel);
+          if(r.ok) presentes.set(alumno.id, { origen:'manual', ts:Date.now() }); else if(r.motivo === 'sin_calendario') avisoCalendario(); else alert('No se pudo marcar. Revisa tu conexión.');
         }
         pintar();
       };
@@ -359,6 +382,18 @@ async function renderPasarLista(){
     });
   };
   buscar.addEventListener('input', pintar);
+  const recargar = async () => {
+    lista.style.opacity = '.5';
+    presentes = await getAsistenciaDetalleHoy(claseSel, sesion.edicion, fechaSel);
+    lista.style.opacity = '1'; txtFecha(); pintar();
+  };
+  document.getElementById('pl-clase').onchange = (e) => { claseSel = parseInt(e.target.value, 10) || sesion.classId; recargar(); };
+  document.getElementById('pl-fecha').onchange = (e) => {
+    const v = e.target.value;
+    if(!v || v > hoyISO()){ e.target.value = fechaSel; if(v) alert('No se puede registrar una fecha futura.'); return; }
+    fechaSel = v; recargar();
+  };
+  const avisoCalendario = () => alert('Para registrar una clase de otra fecha falta activar el calendario en Supabase (ejecutar fechas_clases.sql).');
   pintar();
   document.getElementById('pl-agregar').onclick = async () => {
     const nombre = document.getElementById('pl-nombre').value.trim();
@@ -372,10 +407,10 @@ async function renderPasarLista(){
     const yaExiste = await buscarAlumnoPorRut(rutNorm);
     const id = yaExiste ? yaExiste.id : await upsertAlumno(nombre, wa, rut);
     if(!id){ alert('No se pudo agregar. Revisa tu conexión a internet.'); b.disabled = false; b.textContent = 'Agregar y marcar presente'; return; }
-    const r = await marcarAsistencia(id, sesion.classId, sesion.edicion, 'manual');
-    if(!r.ok) alert('El alumno se agregó, pero no se pudo marcar presente. Márcalo en la lista.');
+    const r = await marcarAsistencia(id, claseSel, sesion.edicion, 'manual', fechaSel);
+    if(!r.ok){ if(r.motivo === 'sin_calendario') avisoCalendario(); else alert('El alumno se agregó, pero no se pudo marcar presente. Márcalo en la lista.'); }
     alumnos = await getTodosLosAlumnos(true);
-    presentes = await getAsistenciaDetalleHoy(sesion.classId, sesion.edicion);
+    presentes = await getAsistenciaDetalleHoy(claseSel, sesion.edicion, fechaSel);
     ['pl-nombre','pl-wa','pl-rut'].forEach(i => { document.getElementById(i).value = ''; });
     b.disabled = false; b.textContent = 'Agregar y marcar presente';
     pintar();
