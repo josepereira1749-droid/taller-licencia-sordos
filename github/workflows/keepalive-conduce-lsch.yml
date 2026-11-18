@@ -1,0 +1,20 @@
+name: Mantener activo Supabase (Conduce LSCh)
+
+on:
+  schedule:
+    - cron: '17 13 * * 0,3'   # domingos y miércoles
+  workflow_dispatch:           # permite ejecutarlo a mano
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consulta a la base de Conduce LSCh
+        run: |
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3cnZjZWd2dXFxaXhvcHdhc3VmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMjQwNzYsImV4cCI6MjEwMjgwMDA3Nn0.NmEvqlCwUgsM4dLGytOm8xejA3PrBiwL_q92mip1xEc"
+          code=$(curl -sS -o resp.json -w "%{http_code}" -X POST \
+            "https://dwrvcegvuqqixopwasuf.supabase.co/rest/v1/rpc/preguntas_gratis" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" -d '{}')
+          echo "Respuesta de Supabase: $code"
+          test "$code" = "200"
